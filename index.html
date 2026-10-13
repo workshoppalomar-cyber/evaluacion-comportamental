@@ -543,7 +543,7 @@ function makeLocalStore(){
 }
 function makeFirebaseStore(){
   firebase.initializeApp(firebaseConfig);
-  firebase.appCheck().activate("6LdPRu0tAAAAAEorWQNFswIxNv6yfN6eHgvG2eHx", true);
+  try { firebase.appCheck().activate(new firebase.appCheck.ReCaptchaEnterpriseProvider("6LdPRu0tAAAAAPQ4pw_a3C1MsBL-6b3ol590d8KN"), true); } catch(e){}
   const col=firebase.firestore().collection("evaluaciones");
   return {
     local:false,
