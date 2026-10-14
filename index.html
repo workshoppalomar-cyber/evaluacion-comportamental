@@ -494,7 +494,6 @@ function renderHist(){
   const vHoy=records.filter(r=>r.fecha===hoy && r.ausentismo==="NOK" && (!eqN||r.equipo===eqN)
     && (filters.supervisor==="Todos"||r.supervisor===filters.supervisor) && (filters.empleado==="Todos"||r.empleado_evaluado===filters.empleado)).length;
   serie.push({label:"Hoy", v:vHoy, hoy:true});
-  for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){ const k=iso(d); serie.push({label:(k===todayISO()?'HOY ':['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][d.getDay()]+' ')+`${pad(d.getDate())}/${pad(d.getMonth()+1)}`, v:counts[k]||0}); }
   const grp=key=>{ const m={}; f.forEach(r=>{ const k=r[key]; if(!k) return; m[k]=(m[k]||0)+(DEFECTO_PESO[r.defectos_pasantes]||0); }); return Object.entries(m).map(([nombre,valor])=>({nombre,valor})).filter(d=>d.valor>0).sort((a,b)=>b.valor-a.valor); };
   const porSup=grp("supervisor"), porEmp=grp("empleado_evaluado");
 
