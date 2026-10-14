@@ -193,6 +193,13 @@
   .notice svg{width:18px;height:18px;flex:none}
 
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  .bc-wrap{overflow-x:auto}
+  .bc{display:flex; align-items:flex-end; gap:10px; min-height:170px; padding:4px 2px 0; border-bottom:1px solid rgba(255,255,255,.12)}
+  .bc-col{flex:1 1 0; min-width:40px; max-width:72px; display:flex; flex-direction:column; align-items:center; gap:5px}
+  .bc-val{font-size:11px; font-weight:700; font-variant-numeric:tabular-nums}
+  .bc-bar{width:60%; max-width:34px; border-radius:5px 5px 2px 2px}
+  .bc-lbl{font-size:10.5px; color:rgba(255,255,255,.55); white-space:nowrap; padding:6px 0 8px}
+  .bc-hoy{color:#38bdf8; font-weight:700}
 </style>
 </head>
 <body>
@@ -350,14 +357,13 @@ function segVariant(opt){ return opt==="OK" ? "v-ok" : (String(opt).includes("DE
 let store=null, records=[], deletingId=null, loading=true;
 let form = freshForm();
 function lunesDe(d){ const x=new Date(d); const w=(x.getDay()+6)%7; x.setDate(x.getDate()-w); return x; }
-function semanaDesde(lunes){ const fin=new Date(lunes); fin.setDate(fin.getDate()+6); return {desde:iso(lunes), hasta:iso(fin)}; }
-const _sem=semanaDesde(lunesDe(new Date()));
-let filters = { desde: _sem.desde, hasta: _sem.hasta, equipo:"Todos", supervisor:"Todos", empleado:"Todos" };
-function moverSemana(delta){
-  const base = delta===0 ? lunesDe(new Date()) : lunesDe(new Date(filters.desde+"T00:00:00"));
-  if(delta!==0) base.setDate(base.getDate()+7*delta);
-  const s=semanaDesde(base); filters.desde=s.desde; filters.hasta=s.hasta;
-  $("f-desde").value=s.desde; $("f-hasta").value=s.hasta; renderHist();
+let desdeAuto=true; // se ajusta solo al primer registro hasta que el usuario lo cambie
+let filters = { desde: todayISO(), hasta: todayISO(), equipo:"Todos", supervisor:"Todos", empleado:"Todos" };
+function ajustarRangoInicial(){
+  if(!desdeAuto || !records.length) return;
+  const min=records.reduce((m,r)=> r.fecha && r.fecha<m ? r.fecha : m, todayISO());
+  filters.desde=min; filters.hasta=todayISO();
+  $("f-desde").value=filters.desde; $("f-hasta").value=filters.hasta;
 }
 function freshForm(keep){ return { equipo: keep||"BTU", supervisor:"", fecha: todayISO(), empleado_evaluado:"", puntualidad:"OK", ausentismo:"OK", defectos_pasantes:"OK", seguridad:"OK", motivo:"", info:"" }; }
 
@@ -413,7 +419,7 @@ $("form").addEventListener("submit", async e=>{
 
 /* ===================== HISTORIAL ===================== */
 $("f-desde").value=filters.desde; $("f-hasta").value=filters.hasta;
-$("f-desde").onchange=e=>{filters.desde=e.target.value; renderHist();};
+$("f-desde").onchange=e=>{desdeAuto=false; filters.desde=e.target.value; renderHist();};
 $("f-hasta").onchange=e=>{filters.hasta=e.target.value; renderHist();};
 $("f-equipo").onchange=e=>{filters.equipo=e.target.value; filters.supervisor="Todos"; filters.empleado="Todos"; renderHist();};
 $("f-sup").onchange=e=>{filters.supervisor=e.target.value; renderHist();};
@@ -447,13 +453,15 @@ function kpiCard(icon,label,value,sub,accent){
 }
 function barChart(serie){
   const max=Math.max(1,...serie.map(s=>s.v));
-  const n=serie.length, W=Math.max(n*24,320), H=170, pad=26, bw=Math.min(16,(W-pad)/n-4);
-  let bars="",labs="";
-  serie.forEach((s,i)=>{ const h=s.v/max*(H-pad-24); const x=pad+i*((W-pad)/n); const y=H-24-h;
-    bars+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw}" height="${Math.max(h,s.v>0?2:0).toFixed(1)}" rx="3" fill="${s.v>0?'#f87171':'rgba(255,255,255,.1)'}"><title>${esc(s.label)}: ${s.v}</title></rect>`;
-    if(i%Math.ceil(n/10)===0) labs+=`<text x="${(x+bw/2).toFixed(1)}" y="${H-8}" fill="rgba(255,255,255,.5)" font-size="9" text-anchor="middle">${esc(s.label)}</text>`;
-  });
-  return `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" width="100%" style="min-width:${W}px;max-width:100%" preserveAspectRatio="xMinYMid meet"><line x1="${pad}" y1="${H-24}" x2="${W}" y2="${H-24}" stroke="rgba(255,255,255,.15)"/>${bars}${labs}</svg></div>`;
+  const cols=serie.map(s=>{
+    const h=Math.round(s.v/max*120);
+    const col=s.hoy?'#38bdf8':'#f87171';
+    return `<div class="bc-col" title="${esc(s.label)}: ${s.v}">
+      <span class="bc-val" style="color:${s.v?col:'rgba(255,255,255,.35)'}">${s.v}</span>
+      <div class="bc-bar" style="height:${Math.max(h, s.v?4:2)}px;background:${s.v?col:'rgba(255,255,255,.12)'}"></div>
+      <span class="bc-lbl${s.hoy?' bc-hoy':''}">${esc(s.label)}</span></div>`;
+  }).join("");
+  return `<div class="bc-wrap"><div class="bc">${cols}</div></div>`;
 }
 function rankList(data,color){
   if(!data.length) return `<div class="rank"><div class="none">Sin datos.</div></div>`;
@@ -475,9 +483,18 @@ function renderHist(){
   const defPorFalta=faltas.length?(sumaDef/faltas.length).toFixed(1):"—";
   const totalEmp=(filters.equipo==="Todos"?EQUIPO_KEYS:[filters.equipo]).reduce((s,k)=>s+new Set(EQUIPOS[k].empleados).size,0);
 
-  const counts={}; f.forEach(r=>{ if(r.ausentismo==="NOK") counts[r.fecha]=(counts[r.fecha]||0)+1; });
-  const serie=[]; const start=new Date(filters.desde+"T00:00:00"), end=new Date(filters.hasta+"T00:00:00");
-  for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){ const k=iso(d); serie.push({label:`${['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][d.getDay()]} ${pad(d.getDate())}/${pad(d.getMonth()+1)}`, v:counts[k]||0}); }
+  const serie=[]; const hoy=todayISO();
+  let ini=lunesDe(new Date(filters.desde+"T00:00:00")); const fin=new Date(filters.hasta+"T00:00:00");
+  for(let w=new Date(ini); w<=fin; w.setDate(w.getDate()+7)){
+    const a=iso(w), e=new Date(w); e.setDate(e.getDate()+6); const b=iso(e);
+    const v=f.filter(r=>r.ausentismo==="NOK" && r.fecha>=a && r.fecha<=b).length;
+    serie.push({label:`Sem ${pad(w.getDate())}/${pad(w.getMonth()+1)}`, v});
+  }
+  const eqN=filters.equipo==="Todos"?null:EQUIPOS[filters.equipo].nombre;
+  const vHoy=records.filter(r=>r.fecha===hoy && r.ausentismo==="NOK" && (!eqN||r.equipo===eqN)
+    && (filters.supervisor==="Todos"||r.supervisor===filters.supervisor) && (filters.empleado==="Todos"||r.empleado_evaluado===filters.empleado)).length;
+  serie.push({label:"Hoy", v:vHoy, hoy:true});
+  for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){ const k=iso(d); serie.push({label:(k===todayISO()?'HOY ':['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][d.getDay()]+' ')+`${pad(d.getDate())}/${pad(d.getMonth()+1)}`, v:counts[k]||0}); }
   const grp=key=>{ const m={}; f.forEach(r=>{ const k=r[key]; if(!k) return; m[k]=(m[k]||0)+(DEFECTO_PESO[r.defectos_pasantes]||0); }); return Object.entries(m).map(([nombre,valor])=>({nombre,valor})).filter(d=>d.valor>0).sort((a,b)=>b.valor-a.valor); };
   const porSup=grp("supervisor"), porEmp=grp("empleado_evaluado");
 
@@ -487,16 +504,10 @@ function renderHist(){
     ${kpiCard(ICON.alert,"Total de defectos",sumaDef,"suma de defectos pasantes","#fbbf24")}
     ${kpiCard(ICON.pct,"Defectos por falta",defPorFalta,"defectos / faltas","#a78bfa")}
   </div>`;
-  const fmt=s=>s.split("-").reverse().slice(0,2).join("/");
+  const fmt=s=>s.split("-").reverse().join("/");
   const chart=`<div class="panel">
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px">
-      <h3 style="margin:0">Faltas por día <span style="color:rgba(255,255,255,.55);font-weight:500;font-size:13px">· ${fmt(filters.desde)} al ${fmt(filters.hasta)}</span></h3>
-      <div style="display:flex;gap:6px">
-        <button class="navlink" data-sem="-1" style="padding:6px 12px">◀ Anterior</button>
-        <button class="navlink" data-sem="0" style="padding:6px 12px">Esta semana</button>
-        <button class="navlink" data-sem="1" style="padding:6px 12px">Siguiente ▶</button>
-      </div>
-    </div>${barChart(serie)}</div>`;
+    <h3 style="margin:0 0 14px">Faltas por semana <span style="color:rgba(255,255,255,.5);font-weight:500;font-size:12px">· desde ${fmt(filters.desde)} hasta hoy</span></h3>
+    ${barChart(serie)}</div>`;
   const ranks=`<div class="ranks">
     <div class="panel"><h3>Total de defectos por supervisor</h3>${rankList(porSup,"#fbbf24")}</div>
     <div class="panel"><h3>Total de defectos por empleado evaluado</h3>${rankList(porEmp,"#fb923c")}</div>
@@ -523,7 +534,6 @@ function renderHist(){
 
   body.innerHTML=kpis+chart+ranks+table;
   body.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>doDelete(b.dataset.del));
-  body.querySelectorAll("[data-sem]").forEach(b=>b.onclick=()=>moverSemana(+b.dataset.sem));
 }
 async function doDelete(id){
   if(deletingId) return;
@@ -586,7 +596,7 @@ if(store.local){
   $("notice-text").textContent="Modo local: las evaluaciones se guardan solo en este celular/computadora. Configura Firebase (ver INSTRUCCIONES) para que se compartan entre todos los supervisores.";
   $("notice").classList.add("show");
 }
-store.subscribe(list=>{ records=list; loading=false; if(!$("view-hist").hidden) renderHist(); });
+store.subscribe(list=>{ records=list; loading=false; ajustarRangoInicial(); if(!$("view-hist").hidden) renderHist(); });
 
 /* registrar service worker (necesario para instalar en el celu) */
 if("serviceWorker" in navigator){ window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(()=>{})); }
