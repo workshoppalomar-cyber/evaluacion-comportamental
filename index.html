@@ -349,7 +349,16 @@ function segVariant(opt){ return opt==="OK" ? "v-ok" : (String(opt).includes("DE
 /* ===================== ESTADO ===================== */
 let store=null, records=[], deletingId=null, loading=true;
 let form = freshForm();
-let filters = { desde: daysAgoISO(29), hasta: todayISO(), equipo:"Todos", supervisor:"Todos", empleado:"Todos" };
+function lunesDe(d){ const x=new Date(d); const w=(x.getDay()+6)%7; x.setDate(x.getDate()-w); return x; }
+function semanaDesde(lunes){ const fin=new Date(lunes); fin.setDate(fin.getDate()+6); return {desde:iso(lunes), hasta:iso(fin)}; }
+const _sem=semanaDesde(lunesDe(new Date()));
+let filters = { desde: _sem.desde, hasta: _sem.hasta, equipo:"Todos", supervisor:"Todos", empleado:"Todos" };
+function moverSemana(delta){
+  const base = delta===0 ? lunesDe(new Date()) : lunesDe(new Date(filters.desde+"T00:00:00"));
+  if(delta!==0) base.setDate(base.getDate()+7*delta);
+  const s=semanaDesde(base); filters.desde=s.desde; filters.hasta=s.hasta;
+  $("f-desde").value=s.desde; $("f-hasta").value=s.hasta; renderHist();
+}
 function freshForm(keep){ return { equipo: keep||"BTU", supervisor:"", fecha: todayISO(), empleado_evaluado:"", puntualidad:"OK", ausentismo:"OK", defectos_pasantes:"OK", seguridad:"OK", motivo:"", info:"" }; }
 
 /* ===================== NAVEGACIÓN ===================== */
@@ -468,7 +477,7 @@ function renderHist(){
 
   const counts={}; f.forEach(r=>{ if(r.ausentismo==="NOK") counts[r.fecha]=(counts[r.fecha]||0)+1; });
   const serie=[]; const start=new Date(filters.desde+"T00:00:00"), end=new Date(filters.hasta+"T00:00:00");
-  for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){ const k=iso(d); serie.push({label:`${pad(d.getDate())}/${pad(d.getMonth()+1)}`, v:counts[k]||0}); }
+  for(let d=new Date(start); d<=end; d.setDate(d.getDate()+1)){ const k=iso(d); serie.push({label:`${['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'][d.getDay()]} ${pad(d.getDate())}/${pad(d.getMonth()+1)}`, v:counts[k]||0}); }
   const grp=key=>{ const m={}; f.forEach(r=>{ const k=r[key]; if(!k) return; m[k]=(m[k]||0)+(DEFECTO_PESO[r.defectos_pasantes]||0); }); return Object.entries(m).map(([nombre,valor])=>({nombre,valor})).filter(d=>d.valor>0).sort((a,b)=>b.valor-a.valor); };
   const porSup=grp("supervisor"), porEmp=grp("empleado_evaluado");
 
@@ -478,7 +487,16 @@ function renderHist(){
     ${kpiCard(ICON.alert,"Total de defectos",sumaDef,"suma de defectos pasantes","#fbbf24")}
     ${kpiCard(ICON.pct,"Defectos por falta",defPorFalta,"defectos / faltas","#a78bfa")}
   </div>`;
-  const chart=`<div class="panel"><h3>Faltas por día</h3>${barChart(serie)}</div>`;
+  const fmt=s=>s.split("-").reverse().slice(0,2).join("/");
+  const chart=`<div class="panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+      <h3 style="margin:0">Faltas por día <span style="color:rgba(255,255,255,.55);font-weight:500;font-size:13px">· ${fmt(filters.desde)} al ${fmt(filters.hasta)}</span></h3>
+      <div style="display:flex;gap:6px">
+        <button class="navlink" data-sem="-1" style="padding:6px 12px">◀ Anterior</button>
+        <button class="navlink" data-sem="0" style="padding:6px 12px">Esta semana</button>
+        <button class="navlink" data-sem="1" style="padding:6px 12px">Siguiente ▶</button>
+      </div>
+    </div>${barChart(serie)}</div>`;
   const ranks=`<div class="ranks">
     <div class="panel"><h3>Total de defectos por supervisor</h3>${rankList(porSup,"#fbbf24")}</div>
     <div class="panel"><h3>Total de defectos por empleado evaluado</h3>${rankList(porEmp,"#fb923c")}</div>
@@ -505,6 +523,7 @@ function renderHist(){
 
   body.innerHTML=kpis+chart+ranks+table;
   body.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>doDelete(b.dataset.del));
+  body.querySelectorAll("[data-sem]").forEach(b=>b.onclick=()=>moverSemana(+b.dataset.sem));
 }
 async function doDelete(id){
   if(deletingId) return;
