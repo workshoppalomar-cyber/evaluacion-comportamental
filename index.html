@@ -420,7 +420,7 @@ function renderEquipo(){
   const g=$("equipo-grid"); g.innerHTML="";
   EQUIPO_KEYS.forEach(k=>{ const b=document.createElement("button"); b.type="button"; b.textContent=EQUIPOS[k].nombre;
     b.className = form.equipo===k?"active":"";
-    b.onclick=()=>{ form=freshForm(k); $("fecha").value=form.fecha; renderEquipo(); renderSup(); renderEmp(); renderSegs(); hideMsgs(); };
+    b.onclick=()=>{ form=freshForm(k); $("fecha").value=form.fecha; $("motivo").value=""; $("info").value=""; renderEquipo(); renderSup(); renderEmp(); renderSegs(); hideMsgs(); };
     g.appendChild(b); });
 }
 function renderSup(){ const s=$("supervisor"); s.innerHTML=""; s.appendChild(new Option("Seleccionar…","")); EQUIPOS[form.equipo].supervisores.forEach(v=>s.appendChild(new Option(v,v))); s.value=form.supervisor; }
@@ -442,6 +442,7 @@ function showErr(t){ $("form-err-text").textContent=t; $("form-err").classList.a
 $("form").addEventListener("submit", async e=>{
   e.preventDefault(); hideMsgs();
   if(!form.supervisor) return showErr("Seleccioná un supervisor.");
+  if(!form.fecha) return showErr("Elegí la fecha.");
   if(!form.empleado_evaluado) return showErr("Seleccioná el empleado evaluado.");
   if(!form.motivo.trim()) return showErr("Completá el motivo.");
   const btn=$("submit-btn"); btn.disabled=true; $("submit-label").textContent="Guardando…";
@@ -450,7 +451,7 @@ $("form").addEventListener("submit", async e=>{
     motivo:form.motivo.trim(), informacion_complementaria:form.info.trim(), created_at:new Date().toISOString() };
   try{
     await store.add(rec);
-    const eq=form.equipo; form=freshForm(eq); $("fecha").value=form.fecha; renderSup(); renderEmp(); renderSegs();
+    const eq=form.equipo; form=freshForm(eq); $("fecha").value=form.fecha; $("motivo").value=""; $("info").value=""; renderSup(); renderEmp(); renderSegs();
     $("form-ok").classList.add("show"); setTimeout(()=>$("form-ok").classList.remove("show"),5000);
   }catch(err){ showErr("No se pudo guardar. "+(err?.code==="quota_exceeded"?"Base de datos llena.":"Reintentá.")); }
   finally{ btn.disabled=false; $("submit-label").textContent="Registrar evaluación"; }
