@@ -47,14 +47,15 @@
   ::selection{background:var(--sky); color:var(--navy-1)}
   h1,h2,h3{margin:0}
 
-  .view[hidden]{display:none!important}
+  [hidden]{display:none!important}
   .page{position:relative; z-index:1; margin:0 auto; padding:40px 20px}
   .page.home{max-width:672px}
   .page.hist{max-width:1152px; padding-left:16px; padding-right:16px}
   @media(min-width:640px){ .page{padding-top:56px; padding-bottom:56px} .page.hist{padding-left:24px;padding-right:24px} }
 
   /* ----- link superior (Historial / Volver) ----- */
-  .toprow{display:flex; margin-bottom:32px}
+  .toprow{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:32px}
+  .toprow .push{margin-right:auto}
   .toprow.end{justify-content:flex-end}
   .toprow.start{justify-content:flex-start}
   .navlink{display:inline-flex; align-items:center; gap:8px; border:1px solid var(--w20); background:var(--w05);
@@ -132,6 +133,10 @@
   .submit:hover{background:rgba(255,255,255,.9)}
   .submit:disabled{opacity:.6; cursor:default}
   .submit svg{width:20px;height:20px}
+
+  .admin-team{border:1px solid var(--w10); background:var(--w05); border-radius:14px; padding:20px; display:flex; flex-direction:column; gap:16px}
+  .admin-team h3{font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--w60)}
+  .hint{font-size:13px; color:var(--w50); margin:0}
 
   .foot{text-align:center; margin-top:32px; font-size:12px; letter-spacing:.2em; color:var(--w40); text-transform:uppercase; position:relative; z-index:1}
 
@@ -215,7 +220,11 @@
 <!-- ===================== HOME / CARGAR ===================== -->
 <section class="view" id="view-home">
   <div class="page home">
-    <div class="toprow end">
+    <div class="toprow">
+      <button class="navlink push" id="go-admin">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Editar listas
+      </button>
       <button class="navlink" id="go-hist">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
         Historial
@@ -328,16 +337,45 @@
   </div>
 </section>
 
+<!-- ===================== EDITAR LISTAS ===================== -->
+<section class="view" id="view-admin" hidden>
+  <div class="page home">
+    <div class="toprow">
+      <button class="navlink" id="admin-back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+        Volver
+      </button>
+    </div>
+    <div class="header" style="margin-bottom:32px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+        <h1>Editar listas</h1>
+        <div class="accent"></div>
+      </div>
+    </div>
+    <div class="form-card">
+      <form id="admin-eq-form">
+        <p class="hint">Un nombre por renglón. Podés pegar una columna copiada de Excel.</p>
+        <div id="admin-teams" style="display:flex;flex-direction:column;gap:20px"></div>
+        <div class="msg err" id="a-eq-err"><span id="a-eq-err-text"></span></div>
+        <div class="msg ok" id="a-eq-ok"><span>Listas guardadas.</span></div>
+        <button type="submit" class="submit">Guardar listas</button>
+      </form>
+    </div>
+    <p class="foot">STELLANTIS · EVALUACIÓN COMPORTAMENTAL</p>
+  </div>
+</section>
+
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-check-compat.js"></script>
 <script>
-/* ===================== DATOS REALES ===================== */
-const BTU_EMP = ["ZUNGRI, GIULIANO","ZALAZAR, CESAR RAFAEL","VITALE, WALTER ADRIAN","VITALE, CLAUDIO ALEJANDRO","VISENTIN, CRISTIAN DANIEL","VILLAVICENCIO, SERGIO OMAR","VILLAFAÑE, MARIO ALBERTO","VILLABOA, GUSTAVO NORBERTO","TORRES, FABIAN GASTON","SPIKERMAN, LUIS ALEJANDRO","SOSA, ARIEL ALBERTO","SOSA, ALEJANDRO GABRIEL","SOSA, MATIAS EMANUEL","SOLVES, DIEGO FERNANDO","SETTEFRATI, MARCOS JAVIER","SEÑUQUE, ALEJANDRA SUSANA","SCALZONE, DAMIAN EUGENIO","SAUCEDO, CRISTIAN DAMIAN","SAPORITI, ARIEL ALEJANDRO","SANSO, DIEGO MARTIN","SANCHEZ, DANIEL JEREMIAS","SABAN, JOSE ALFREDO","RODRIGUEZ, MAXIMILIANO JAVIER","ROBLES, EVELYN YOHANNA","RANIELI, FRANCISCO","QUIPILDOR, FABIAN","PERRONE, DAMIAN ALBERTO","PATERNO, ALEJANDRO","PAGLIALUNGA, MARCELO","OLMOS, RAIMUNDO ALBERTO","NASSIF, JORGE SANTIAGO","MONZON, ESTEBAN EDUARDO","MOLINA, CESAR GUSTAVO","MILLIER, ARIEL JOSE","MERLI, MARIANA LOURDES","MENDOZA, CHRISTIAN GASTON","MEDINA, MARCELA KARINA","MEDIZZA, GUSTAVO","MAGRANES, HERNAN RODRIGO","LUNA, ROBERTO OMAR","LUNA, GASTON NICOLAS","LOPEZ, JUAN PABLO","LESCANO, DANTE MARCELO","LEONE, ALBERTO ANTONIO","LEONE, FRANCISCO MANUEL","LALLI, CARLOS OMAR","LAGOS, HUGO ARIEL","IESULAURO, FERNANDO MATIAS","GUINDA, ARIEL DARIO","GRILLO, ADRIAN WALTER","GIOFRE, SEBASTIAN MARIO","GIARDINA, SEBASTIAN JOSE","GERMEK, GASTON EMILIO","GALANTE, IVAN","FONTANIVE, DANIEL OSCAR","FERREYRA, JOSE DIEGO","FERNANDEZ, FRANCISCO JAVIER","EDSBERG, GUSTAVO EMILIO","DOMINGUEZ, MARCELO FABIAN","DIAZ, EDUARDO OSCAR","DA ROSA, ANTONIO GABRIEL","CRUPI, CLAUDIO ANDRES","CIOCCI, PABLO HERNAN","CICILIANI, DIEGO NORBERTO","CELAYETA, MARCELO EDUARDO","CASTRO, ALEJANDRO MATIAS","CARABAJAL, MATIAS","CAPRISTO, MARCELO MIGUEL","CAMPODONICO, MAXIMILIANO EZEQUIEL","CAMPO, ALICIA DANIELA","CALCAGNO, ARIEL ROQUE","CACERES, LEONARDO JESUS","CABRERA, ROBERTO HORACIO","BRUMATTI, JORGE AMADEO","BRUMATTI, ANGEL ANDRES","BLASON, NESTOR EDGARDO","BITTI, VICTOR MANUEL","BENITO, HERNAN","BARRIO, GASTON NORBERTO","BALLEDOR, ESTEBAN ALEJANDRO","AVILA, JORGE EZEQUIEL","AUSEJO, CRISTIAN HERNAN","ARMENTI, MIGUEL ANGEL","ANTUNEZ DE SOUZA, MATIAS","ANTONELLI, CLAUDIO ANDRES","AGÜERO, ENRIQUE DARDO","ACEVEDO, CLAUDIO DANIEL"];
+/* ===================== EQUIPOS ===================== */
+/* Los nombres de supervisores y empleados NO van en el código (el repo es público).
+   Viven en Firebase (config/equipos) y se cambian desde "Editar listas". */
 const EQUIPOS = {
-  BTU:{nombre:"BTU", supervisores:["Vizcarra","Arguello","Villaboa","Pianca"], empleados:BTU_EMP},
-  Metrologia:{nombre:"Metrología", supervisores:["BIANCOTTI, Silvio Gabriel"], empleados:["GALANTE, Iván","SPIKERMAN, Luis Alejandro","AUSEJO, Cristian","MONZON, Esteban Eduardo","VISENTIN, Cristian Daniel","MOLINA, Cesar","IESULAURO, Fernando Matias"]},
-  FEG:{nombre:"FEG", supervisores:["DALLA CORTE, Ivan"], empleados:["CRUPI, Claudio Andrés","BRUMATTI, Jorge Amadeo","BARRIO, Gaston Norberto","CACERES, Leonardo Jesús","AVILA, Jorge Ezequiel","TORRES, Fabian"]},
+  BTU:{nombre:"BTU", supervisores:[], empleados:[]},
+  Metrologia:{nombre:"Metrología", supervisores:[], empleados:[]},
+  FEG:{nombre:"FEG", supervisores:[], empleados:[]},
 };
 const EQUIPO_KEYS = ["BTU","Metrologia","FEG"];
 const DEFECTO_PESO = {"OK":0,"1 DEFECTO":1,"2 DEFECTOS":2,"3 DEFECTOS":3,"NOK":3};
@@ -368,8 +406,9 @@ function ajustarRangoInicial(){
 function freshForm(keep){ return { equipo: keep||"BTU", supervisor:"", fecha: todayISO(), empleado_evaluado:"", puntualidad:"OK", ausentismo:"OK", defectos_pasantes:"OK", seguridad:"OK", motivo:"", info:"" }; }
 
 /* ===================== NAVEGACIÓN ===================== */
-$("go-hist").onclick = () => { $("view-home").hidden=true; $("view-hist").hidden=false; window.scrollTo(0,0); renderHist(); };
-$("go-home").onclick = () => { $("view-hist").hidden=true; $("view-home").hidden=false; window.scrollTo(0,0); };
+function show(view){ ["view-home","view-hist","view-admin"].forEach(v=>$(v).hidden = v!==view); window.scrollTo(0,0); }
+$("go-hist").onclick = () => { show("view-hist"); renderHist(); };
+$("go-home").onclick = () => show("view-home");
 
 /* ===================== FORMULARIO ===================== */
 $("fecha").value = form.fecha;
@@ -541,11 +580,7 @@ async function doDelete(id){
   catch(err){} finally{ deletingId=null; renderHist(); }
 }
 
-/* ===================== ALMACENAMIENTO ===================== */
-/* ==========================================================================
-   PEGA TU CONFIG DE FIREBASE ACA (mira INSTRUCCIONES.txt, paso 1).
-   Si lo dejas vacio, la app funciona igual pero guarda SOLO en este dispositivo.
-   ========================================================================== */
+/* ===================== FIREBASE ===================== */
 const firebaseConfig = {
   apiKey: "AIzaSyC7FItqzYquBXo5besRzkUnvbyT_3LrtYk",
   authDomain: "evaluacion-stellantis.firebaseapp.com",
@@ -555,47 +590,54 @@ const firebaseConfig = {
   appId: "1:667669538321:web:a0761e066c2ffb37a1f3b0"
 };
 
-function makeLocalStore(){
-  const KEY="evaluaciones"; let subs=[];
-  const read=()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||"[]"); }catch(e){ return []; } };
-  const write=a=>{ try{ localStorage.setItem(KEY, JSON.stringify(a)); }catch(e){} };
-  const sorted=()=>[...read()].sort((x,y)=>(y.fecha||"").localeCompare(x.fecha||"")||(y.created_at||"").localeCompare(x.created_at||""));
-  const emit=()=>subs.forEach(cb=>cb(sorted()));
-  window.addEventListener("storage",e=>{ if(e.key===KEY) emit(); });
-  return {
-    local:true,
-    add:r=>{ const a=read(); a.push({__id:"loc_"+Date.now().toString(36)+Math.random().toString(36).slice(2,7), ...r}); write(a); emit(); return Promise.resolve(); },
-    remove:id=>{ write(read().filter(x=>x.__id!==id)); emit(); return Promise.resolve(); },
-    subscribe:cb=>{ subs.push(cb); emit(); return ()=>{}; }
-  };
+const aviso = t => { $("notice-text").textContent=t; $("notice").classList.toggle("show", !!t); };
+const lineas = t => [...new Set(String(t).split("\n").map(s=>s.trim()).filter(Boolean))];
+function msg(prefix, text, ok){
+  $(prefix+"-err").classList.remove("show"); $(prefix+"-ok").classList.remove("show");
+  if(!text) return;
+  const t=$(prefix+"-err-text"); if(!ok && t) t.textContent=text;
+  $(prefix+(ok?"-ok":"-err")).classList.add("show");
 }
-function makeFirebaseStore(){
-  firebase.initializeApp(firebaseConfig);
-  try { firebase.appCheck().activate(new firebase.appCheck.ReCaptchaEnterpriseProvider("6LdPRu0tAAAAAPQ4pw_a3C1MsBL-6b3ol590d8KN"), true); } catch(e){}
-  const col=firebase.firestore().collection("evaluaciones");
-  return {
-    local:false,
-    add:r=>col.add(r),
-    remove:id=>col.doc(id).delete(),
-    subscribe:cb=>col.orderBy("fecha","desc").limit(2000).onSnapshot(
-      s=>cb(s.docs.map(d=>({__id:d.id,...d.data()}))),
-      e=>{ $("notice-text").textContent="Error al conectar con la base. Revisa la config de Firebase y las reglas de Firestore (INSTRUCCIONES)."; $("notice").classList.add("show"); }
-    )
-  };
+function cargarEquipos(d){
+  d=d||{};
+  EQUIPO_KEYS.forEach(k=>{ const e=d[k]||{}; EQUIPOS[k].supervisores=e.supervisores||[]; EQUIPOS[k].empleados=e.empleados||[]; });
+  renderSup(); renderEmp(); if(!$("view-hist").hidden) renderHist();
+  aviso(EQUIPO_KEYS.every(k=>!EQUIPOS[k].empleados.length) ? "Todavía no hay empleados cargados. Cargalos desde “Editar listas”." : "");
 }
 
-const fbOk = firebaseConfig.apiKey && firebaseConfig.projectId && typeof firebase!=="undefined";
-try{ store = fbOk ? makeFirebaseStore() : makeLocalStore(); }
-catch(e){ store = makeLocalStore(); }
-
-/* ===================== INIT ===================== */
 renderEquipo(); renderSup(); renderEmp(); renderSegs();
 
-if(store.local){
-  $("notice-text").textContent="Modo local: las evaluaciones se guardan solo en este celular/computadora. Configura Firebase (ver INSTRUCCIONES) para que se compartan entre todos los supervisores.";
-  $("notice").classList.add("show");
+if(typeof firebase==="undefined"){
+  aviso("No se pudo conectar. Revisá tu internet y volvé a abrir la app.");
+} else {
+  firebase.initializeApp(firebaseConfig);
+  try { firebase.appCheck().activate(new firebase.appCheck.ReCaptchaEnterpriseProvider("6LdPRu0tAAAAAPQ4pw_a3C1MsBL-6b3ol590d8KN"), true); } catch(e){}
+  const db=firebase.firestore(), col=db.collection("evaluaciones");
+  const baseError = e => aviso("Error al conectar con la base ("+((e&&e.code)||"error")+"). Revisá tu internet y volvé a abrir la app.");
+  store = { add: r => col.add(r), remove: id => col.doc(id).delete() };
+
+  db.doc("config/equipos").onSnapshot(s=>cargarEquipos(s.data()), baseError);
+  col.orderBy("fecha","desc").limit(2000).onSnapshot(
+    s=>{ records=s.docs.map(d=>({__id:d.id,...d.data()})); loading=false; ajustarRangoInicial(); if(!$("view-hist").hidden) renderHist(); },
+    baseError);
+
+  /* ----- editar listas ----- */
+  $("go-admin").onclick = () => {
+    msg("a-eq","");
+    $("admin-teams").innerHTML = EQUIPO_KEYS.map(k=>`<div class="admin-team"><h3>${esc(EQUIPOS[k].nombre)}</h3>
+      <div class="field"><label for="a-sup-${k}">Supervisores</label><textarea id="a-sup-${k}" rows="3"></textarea></div>
+      <div class="field"><label for="a-emp-${k}">Empleados</label><textarea id="a-emp-${k}" rows="8"></textarea></div></div>`).join("");
+    EQUIPO_KEYS.forEach(k=>{ $("a-sup-"+k).value=EQUIPOS[k].supervisores.join("\n"); $("a-emp-"+k).value=EQUIPOS[k].empleados.join("\n"); });
+    show("view-admin");
+  };
+  $("admin-back").onclick = () => show("view-home");
+  $("admin-eq-form").onsubmit = async e => {
+    e.preventDefault(); msg("a-eq","");
+    const d={}; EQUIPO_KEYS.forEach(k=>d[k]={supervisores:lineas($("a-sup-"+k).value), empleados:lineas($("a-emp-"+k).value)});
+    try{ await db.doc("config/equipos").set(d); msg("a-eq","ok",true); }
+    catch(err){ msg("a-eq","No se pudo guardar ("+((err&&err.code)||"error")+")."); }
+  };
 }
-store.subscribe(list=>{ records=list; loading=false; ajustarRangoInicial(); if(!$("view-hist").hidden) renderHist(); });
 
 /* registrar service worker (necesario para instalar en el celu) */
 if("serviceWorker" in navigator){ window.addEventListener("load",()=>navigator.serviceWorker.register("service-worker.js").catch(()=>{})); }
